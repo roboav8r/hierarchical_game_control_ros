@@ -1,0 +1,4 @@
+#ifndef GRAPH_DATATYPES_H_
+#define GRAPH_DATATYPES_H_
+
+#endif //GRAPH_DATATYPES_H_

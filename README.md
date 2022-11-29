@@ -1,2 +1,2 @@
-# hierarchal_game_control_ros
-A ROS package to implement a hierarchal game-theoretical control system for robots. The two-layer hierarchy consists of a high-level Monte-Carlo Tree Search (MCTS) planner, and a low-level optimal controller using the IFOPT solver as a backend.
+# hierarchical_game_control_ros
+A ROS package to implement a hierarchical game-theoretical control system for robots. The two-layer hierarchy consists of a high-level Monte-Carlo Tree Search (MCTS) planner, and a low-level optimal controller using the IFOPT solver as a backend.

@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>hierarchal_game_control_ros</name>
+  <name>hierarchical_game_control_ros</name>
   <version>0.0.0</version>
-  <description>The hierarchal_game_control_ros package</description>
+  <description>The hierarchical_game_control_ros package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/hierarchal_game_control_ros</url> -->
+  <!-- <url type="website">http://wiki.ros.org/hierarchical_game_control_ros</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -33,6 +33,7 @@
   <!-- Examples: -->
   <!-- Use depend as a shortcut for packages that are both build and exec dependencies -->
   <!--   <depend>roscpp</depend> -->
+  <depend> ifopt </depend>
   <!--   Note that this is equivalent to the following: -->
   <!--   <build_depend>roscpp</build_depend> -->
   <!--   <exec_depend>roscpp</exec_depend> -->
