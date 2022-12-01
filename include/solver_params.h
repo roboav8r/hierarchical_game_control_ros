@@ -87,10 +87,10 @@ public:
   VecBound GetBounds() const override
   {
     VecBound bounds(GetRows());
-    bounds.at(0) = ifopt::Bounds(-ifopt::inf, ifopt::inf); 
-    bounds.at(1) = ifopt::Bounds(-ifopt::inf, ifopt::inf);
-    bounds.at(2) = ifopt::Bounds(-ifopt::inf, ifopt::inf);
-    bounds.at(3) = ifopt::Bounds(-ifopt::inf, ifopt::inf);
+    bounds.at(0) = ifopt::Bounds(-100, 100); 
+    bounds.at(1) = ifopt::Bounds(-100, 100);
+    bounds.at(2) = ifopt::Bounds(-6.4, 6.4);
+    bounds.at(3) = ifopt::Bounds(minVel_, maxVel_);
     return bounds;
   }
 

@@ -1,0 +1,11 @@
+<launch>
+  <!-- Launch the testbed -->
+  <arg name="gui" default="true"/>
+  <arg name="level" default="hospital_empty"/>
+  <include file="$(find hri_game_testbed)/launch/hospital_game.launch" pass_all_args="true" />
+
+  <!-- Launch the low-level controller -->
+  <node name="lowlevel_controller_node" pkg="hierarchical_game_control_ros" type="lowlevel_controller_node" output="screen"/>
+
+
+</launch>

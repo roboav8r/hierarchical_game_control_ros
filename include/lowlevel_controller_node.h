@@ -40,14 +40,14 @@ std::vector<float> scanXMap(numScans);
 std::vector<float> scanYMap(numScans);
 
 // Cost weights
-float yawRateCost{0.5};
+float yawRateCost{0.25};
 float accCost{0.1};
-float goalCost{5.0};
-float latObstCost{0.1};
-float axObstCost{0.5};
+float goalCost{10.0};
+float latObstCost{0.0001};
+float axObstCost{0.001};
 
 // System limits
-float minvel = -0.1;
+float minvel = -0.5;
 float maxvel = 5.0;
 
 // ROS Subscriber callback
@@ -66,7 +66,7 @@ void robotOdomCallback(const nav_msgs::OdometryConstPtr& msg)
 void scanCallback(const sensor_msgs::LaserScanConstPtr& msg)
 {
     // Convert from raw scan data into limited scan dataset for processing
-    std::cout << "Laser scan has n_points = " << msg->ranges.size() << std::endl;
+    //std::cout << "Laser scan has n_points = " << msg->ranges.size() << std::endl;
     for (int ii = 0; ii < numScans; ii++) 
     {
         msg->ranges[scanIndices[ii]] > rangeMax ? scanRanges[ii] = rangeMax : scanRanges[ii] = msg->ranges[scanIndices[ii]];
@@ -74,7 +74,7 @@ void scanCallback(const sensor_msgs::LaserScanConstPtr& msg)
         scanYRobot[ii] = scanRanges[ii]*sin(scanAngles[ii]);
         scanXMap[ii] = robotX + cos(robotHeading)*scanXRobot[ii] - sin(robotHeading)*scanYRobot[ii];
         scanYMap[ii] = robotY + sin(robotHeading)*scanXRobot[ii] + cos(robotHeading)*scanYRobot[ii];
-        std::cout << scanAngles[ii] << "," << scanRanges[ii] <<": " << scanXRobot[ii] << "," << scanYRobot[ii] <<std::endl;
+        //std::cout << scanAngles[ii] << "," << scanRanges[ii] <<": " << scanXRobot[ii] << "," << scanYRobot[ii] <<std::endl;
     };
     // robotOdom = (*msg);
 }

@@ -27,8 +27,8 @@ int main(int argc, char **argv)
   // TODO make subscriber & callback
   move_base_msgs::MoveBaseGoal goal;
   // TODO boolean goal_reached and tolerance
-  goal.target_pose.pose.position.x = 10;
-  goal.target_pose.pose.position.y = 15;
+  goal.target_pose.pose.position.x = 5;
+  goal.target_pose.pose.position.y = 5;
 
   /*
   DEFINE VARIABLES
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
   // Constraints
   std::shared_ptr<DynConstraint> dyn_const_ptr = std::make_shared<DynConstraint>("dyn_const", dt);
   std::shared_ptr<StateConstraint> state_const_ptr = std::make_shared<StateConstraint>("curr_state_const");
-  std::shared_ptr<StateBounds> state_bounds_ptr = std::make_shared<StateBounds>("state_bounds");
+  // std::shared_ptr<StateBounds> state_bounds_ptr = std::make_shared<StateBounds>("state_bounds");
   // Costs
   std::shared_ptr<InputCostFunction> input_cost_ptr = std::make_shared<InputCostFunction>("input_cost",yawRateCost,accCost);
   std::shared_ptr<GoalCostFunction> goal_cost_ptr = std::make_shared<GoalCostFunction>("goal_cost",goalCost,dt);
@@ -63,7 +63,7 @@ int main(int argc, char **argv)
   llControlProgram.AddVariableSet(tgt_state_var_ptr);
   llControlProgram.AddConstraintSet(dyn_const_ptr);
   llControlProgram.AddConstraintSet(state_const_ptr);
-  llControlProgram.AddConstraintSet(state_bounds_ptr);
+  // llControlProgram.AddConstraintSet(state_bounds_ptr);
   llControlProgram.AddCostSet(input_cost_ptr);
   llControlProgram.AddCostSet(goal_cost_ptr);
   llControlProgram.AddCostSet(obst_cost_ptr);
@@ -90,12 +90,12 @@ int main(int argc, char **argv)
     float x_error = goal.target_pose.pose.position.x - currentX;
     float y_error = goal.target_pose.pose.position.y - currentY;
 
-    std::cout << "x goal: " << goal.target_pose.pose.position.x << std::endl;
-    std::cout << "y goal: " << goal.target_pose.pose.position.y << std::endl;  
-    std::cout << "currentX: " << currentX << std::endl;
-    std::cout << "currentY: " << currentY << std::endl;
-    std::cout << "currentH: " << currentH << std::endl;
-    std::cout << "currentV: " << currentV << std::endl;
+    // std::cout << "x goal: " << goal.target_pose.pose.position.x << std::endl;
+    // std::cout << "y goal: " << goal.target_pose.pose.position.y << std::endl;  
+    // std::cout << "currentX: " << currentX << std::endl;
+    // std::cout << "currentY: " << currentY << std::endl;
+    // std::cout << "currentH: " << currentH << std::endl;
+    // std::cout << "currentV: " << currentV << std::endl;
     //std::cout << "yaw rate" << robotYawRate << std::endl;
     curr_state_var_ptr->SetVariables(Vector4d(currentX, currentY,currentH,currentV));
     tgt_state_var_ptr->SetVariables(Vector4d(currentX, currentY,currentH,currentV));
