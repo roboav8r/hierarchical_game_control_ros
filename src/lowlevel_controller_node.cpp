@@ -12,16 +12,16 @@ int main(int argc, char **argv)
  
   // Create ROS node
   ros::init(argc, argv, "ll_controller_node");
-  ros::NodeHandle n;
+  ros::NodeHandle nh;
 
   // Create control publisher
-  ros::Publisher control_pub = n.advertise<geometry_msgs::Twist>("/base_controller/command",10);
+  ros::Publisher control_pub = nh.advertise<geometry_msgs::Twist>("/base_controller/command",10);
 
   // Get current robot position
-  ros::Subscriber position_sub = n.subscribe<nav_msgs::Odometry>("/base_pose_ground_truth", 1, robotOdomCallback);
+  ros::Subscriber position_sub = nh.subscribe<nav_msgs::Odometry>("/base_pose_ground_truth", 1, robotOdomCallback);
 
   // Get LiDAR scan data
-  ros::Subscriber lidar_sub = n.subscribe<sensor_msgs::LaserScan>("/base_scan", 1, scanCallback);
+  ros::Subscriber lidar_sub = nh.subscribe<sensor_msgs::LaserScan>("/base_scan", 1, scanCallback);
 
   // Get Goal
   // TODO make subscriber & callback
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 
   // Setup main propagation/visualization/publisher loop (timer)
   // ros::Rate loopRate(10);
-  ros::Timer mainTimer = n.createTimer(ros::Duration(dt),[&](const ros::TimerEvent& event)
+  ros::Timer mainTimer = nh.createTimer(ros::Duration(dt),[&](const ros::TimerEvent& event)
   {
     // Process current state
     float currentX = robotX;

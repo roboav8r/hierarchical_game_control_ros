@@ -58,31 +58,48 @@ int main(int argc, char** argv)
     //plannerImg.setTo(cv::Scalar(0,0,0));
     plannerImg = mapImg.clone(); // 
     updateRobotPixels(); // Compute robot's pixel location on the map
-    cv::circle(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), 10, cv::Scalar(0,0,0));// Add a circle where the robot is
+    updateCargoPixels(); // Compute cargo pixel locations from 
+    cv::circle(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), 10, cv::Scalar(0,255,255), cv::FILLED);// Add a circle where the robot is
+    cv::circle(plannerImg, cv::Point(pickupXpixel, plannerImg.rows - pickupYpixel), (int)(cargoDist/mapResolution), CV_RGB(0,0,0));// Add a circle at cargo pickup
+    cv::circle(plannerImg, cv::Point(dropoffXpixel, plannerImg.rows - dropoffYpixel), (int)(cargoDist/mapResolution), CV_RGB(0,0,0));// Add a circle at cargo dropoff
+    cv::putText(plannerImg, "Robot", cv::Point(robotXpixel, plannerImg.rows - robotYpixel - (int)(cargoDist/mapResolution)), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(118, 185, 0), 1);
+    cv::putText(plannerImg, "Pickup", cv::Point(pickupXpixel, plannerImg.rows - pickupYpixel - (int)(cargoDist/mapResolution)), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(118, 185, 0), 1);
+    cv::putText(plannerImg, "Dropoff", cv::Point(dropoffXpixel, plannerImg.rows - dropoffYpixel - (int)(cargoDist/mapResolution)), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(118, 185, 0), 1);
+    if (robotHasCargo){
+        cv::putText(plannerImg, "[cargo]", cv::Point(robotXpixel, plannerImg.rows - robotYpixel + (int)(cargoDist/mapResolution)), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(118, 185, 0), 1);
+    }
+    if (cargoAtPickup){
+        cv::putText(plannerImg, "[cargo]", cv::Point(pickupXpixel, plannerImg.rows - pickupYpixel + (int)(cargoDist/mapResolution)), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(118, 185, 0), 1);
+    }
+    if (cargoAtDest){
+        cv::putText(plannerImg, "[cargo]", cv::Point(dropoffXpixel, plannerImg.rows - dropoffYpixel + (int)(cargoDist/mapResolution)), cv::FONT_HERSHEY_DUPLEX, 0.5, CV_RGB(118, 185, 0), 1);
+    }
 
-    // Create node at current state
-    bool atPickupLoc = inCargoDist(robotX,robotY,cargoX,cargoY);
-    bool atDropoffLoc = inCargoDist(robotX,robotY,destX,destY);
-    currentState = GameState(robotXpixel, robotYpixel, robotHasCargo, mapHasCargo, 
-                          atPickupLoc, atDropoffLoc, &mapImg, pixStepsize, freeThresh);
-    gameTree = Tree(&currentState);
+
+    // Initialize node & tree at current state
+    currentState = GameState(robotXpixel, robotYpixel, robotHasCargo, pickupXpixel, pickupYpixel, cargoAtPickup, dropoffXpixel, dropoffYpixel, cargoAtDest, cargoDist, &mapImg, pixStepsize, freeThresh);
+    gameTree = Tree(&currentState); // Create tree with current state as root
 
     // Run the search
     gameTree.Search();
 
     // plotAvailMoves
     if( std::find(gameTree.rootNode->availMoves.begin(), gameTree.rootNode->availMoves.end(), Move::PlusX) != gameTree.rootNode->availMoves.end() ) {
-        cv::line(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), cv::Point(robotXpixel+pixStepsize, plannerImg.rows - robotYpixel), cv::Scalar(0,0,0), 2, cv::LINE_8);
+        cv::line(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), cv::Point(robotXpixel+pixStepsize, plannerImg.rows - robotYpixel), cv::Scalar(0,0,0), 1, cv::LINE_8);
     }
     if ( std::find(gameTree.rootNode->availMoves.begin(), gameTree.rootNode->availMoves.end(), Move::PlusY) != gameTree.rootNode->availMoves.end() ) {
-        cv::line(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), cv::Point(robotXpixel, plannerImg.rows - (robotYpixel +pixStepsize)), cv::Scalar(0,0,0), 2, cv::LINE_8);
+        cv::line(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), cv::Point(robotXpixel, plannerImg.rows - (robotYpixel +pixStepsize)), cv::Scalar(0,0,0), 1, cv::LINE_8);
     }
     if( std::find(gameTree.rootNode->availMoves.begin(), gameTree.rootNode->availMoves.end(), Move::MinusX) != gameTree.rootNode->availMoves.end() ) {
-        cv::line(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), cv::Point(robotXpixel-pixStepsize, plannerImg.rows - robotYpixel), cv::Scalar(0,0,0), 2, cv::LINE_8);
+        cv::line(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), cv::Point(robotXpixel-pixStepsize, plannerImg.rows - robotYpixel), cv::Scalar(0,0,0), 1, cv::LINE_8);
     }
     if ( std::find(gameTree.rootNode->availMoves.begin(), gameTree.rootNode->availMoves.end(), Move::MinusY) != gameTree.rootNode->availMoves.end() ) {
-        cv::line(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), cv::Point(robotXpixel, plannerImg.rows - (robotYpixel -pixStepsize)), cv::Scalar(0,0,0), 2, cv::LINE_8);
+        cv::line(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), cv::Point(robotXpixel, plannerImg.rows - (robotYpixel -pixStepsize)), cv::Scalar(0,0,0), 1, cv::LINE_8);
     }
+
+    // Handle the selected action
+
+    // Plot best/selected move
 
 
     // Resize and display

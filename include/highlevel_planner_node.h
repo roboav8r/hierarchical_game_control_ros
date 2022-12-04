@@ -40,7 +40,7 @@ cv::Mat mapImg;
 cv::Mat plannerImg, scaledImg;
 std::string mapPath;
 double mapResolution{.05};
-double mapOriginX{-100.0};
+double mapOriginX{-99.7};
 double mapOriginY{-90.0};
 float freeThresh;
 uint robotXpixel;
@@ -50,11 +50,16 @@ uint robotYpixel;
 GameState currentState;
 Tree gameTree;
 bool robotHasCargo{false};
-bool mapHasCargo{true};
+bool cargoAtPickup{true};
+bool cargoAtDest{false};
 float cargoX{5.0};
 float cargoY{12.0};
+uint pickupXpixel;
+uint pickupYpixel;
 float destX{-5.0};
 float destY{12.0};
+uint dropoffXpixel;
+uint dropoffYpixel;
 float cargoDist{1.0};
 float movementStepSize{1.0};
 int pixStepsize;
@@ -63,18 +68,24 @@ bool mapNegate{false};
 /*
 Functions
 */
-bool inCargoDist(float rob_x, float rob_y, float pos_x, float pos_y){
-    return sqrt(pow(rob_x - pos_x,2) + pow(rob_y - pos_y,2)) <= cargoDist;
-}
+// bool inCargoDist(float rob_x, float rob_y, float pos_x, float pos_y){
+//     return sqrt(pow(rob_x - pos_x,2) + pow(rob_y - pos_y,2)) <= cargoDist;
+// }
 
-
+// Convert between ROS map coordinates and actual map pixels for planning
 void updateRobotPixels()
 { 
     robotXpixel = (robotX - mapOriginX)/mapResolution;
     robotYpixel = (robotY - mapOriginY)/mapResolution;
 }
 
-// Get next action/solve MCTS tree(time)
+void updateCargoPixels()
+{
+    pickupXpixel = (cargoX - mapOriginX)/mapResolution;
+    pickupYpixel = (cargoY - mapOriginY)/mapResolution;
+    dropoffXpixel = (destX - mapOriginX)/mapResolution;
+    dropoffYpixel = (destY - mapOriginY)/mapResolution;
+}
 
 /*
 ROS Callbacks
