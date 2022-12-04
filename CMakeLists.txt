@@ -7,10 +7,11 @@ project(hierarchical_game_control_ros)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp geometry_msgs move_base_msgs nav_msgs sensor_msgs ifopt)
+find_package(catkin REQUIRED COMPONENTS roscpp geometry_msgs move_base_msgs nav_msgs sensor_msgs ifopt image_transport)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+find_package (OpenCV 4.2 EXACT REQUIRED)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -113,6 +114,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
   include
+  include_directories ("/usr/include/opencv4/")
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -143,8 +145,8 @@ add_executable(highlevel_planner_node src/highlevel_planner_node.cpp)
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(lowlevel_controller_node ${catkin_LIBRARIES})
-target_link_libraries(highlevel_planner_node ${catkin_LIBRARIES})
+target_link_libraries(lowlevel_controller_node ${catkin_LIBRARIES} ${OpenCV_LIBS} )
+target_link_libraries(highlevel_planner_node ${catkin_LIBRARIES} ${OpenCV_LIBS} )
 
 #############
 ## Install ##
