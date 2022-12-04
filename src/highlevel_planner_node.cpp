@@ -77,8 +77,9 @@ int main(int argc, char** argv)
 
 
     // Initialize node & tree at current state
-    currentState = GameState(robotXpixel, robotYpixel, robotHasCargo, pickupXpixel, pickupYpixel, cargoAtPickup, dropoffXpixel, dropoffYpixel, cargoAtDest, cargoDist, &mapImg, pixStepsize, freeThresh);
-    gameTree = Tree(&currentState); // Create tree with current state as root
+    currentState.reset();
+    currentState = std::make_shared<GameState>(robotXpixel, robotYpixel, robotHasCargo, pickupXpixel, pickupYpixel, cargoAtPickup, dropoffXpixel, dropoffYpixel, cargoAtDest, cargoDist, &mapImg, pixStepsize, freeThresh);
+    Tree gameTree = Tree(currentState); // Create tree with current state as root
 
     // Run the search
     gameTree.Search();
@@ -110,7 +111,7 @@ int main(int argc, char** argv)
     cv::imshow("Planner", scaledImg);
     cv::waitKey(3);
 
-    std::cout << "End Main Timer: " << event.current_real << std::endl;
+    // std::cout << "End Main Timer: " << event.current_real << std::endl;
   });
 
 

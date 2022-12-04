@@ -1,6 +1,8 @@
 #ifndef GRAPH_DATATYPES_H_
 #define GRAPH_DATATYPES_H_
 
+#include <random>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -63,7 +65,7 @@ public:
     }
 
     // Child constructor: Create new node/GameState from a parent state + move
-    GameState(GameState* last_state, Move& move): parent(last_state),
+    GameState(std::shared_ptr<GameState> last_state, Move& move): parent(last_state),
     robotXPix(last_state->robotXPix), robotYPix(last_state->robotYPix), robotHasCargo(last_state->robotHasCargo),
     pickupXPix(last_state->pickupXPix), pickupYPix(last_state->pickupYPix), cargoAtPickup(last_state->cargoAtPickup), // Pickup site state
     destXPix(last_state->destXPix), destYPix(last_state->destYPix), cargoAtDest(last_state->cargoAtDest), // Destination/dropoff site state
@@ -72,8 +74,9 @@ public:
     freeThreshold(last_state->freeThreshold),
     nMoves(last_state->nMoves) 
     {
-        std::cout << "Creating new child node from parent at :" << parent->robotXPix <<", " << parent->robotYPix << std::endl;
-        std::cout << "Got move:" << move << std::endl;
+        // std::cout << "Creating new child node from parent at :" << parent->robotXPix <<", " << parent->robotYPix << std::endl;
+        //std::cout << "Got move:" << move << std::endl;
+
 
         // Propagate state from parent -> move -> child node 
         propagate(move);
@@ -104,15 +107,19 @@ public:
     float freeThreshold;
 
     // MCTS 
-    GameState*              parent;
+    std::shared_ptr<GameState>  parent;
     std::vector<Move>       availMoves;
     std::vector<Move>       completedMoves;
-    std::vector<GameState*> children;
-    std::vector<float>      childValue;
+    std::vector<std::shared_ptr<GameState>> children;
+    std::vector<float>      childUctValue;
+    std::vector<float>      moveValue;
     int nTimesVisited;
     int score;
     uint nMoves;
     int8_t maxNumMoves{50}; // TODO make this a parameter
+
+    // Random number generation
+    std::default_random_engine generator;
 
     // Class-specific helper functions
     bool robotCanPickupCargo()
@@ -215,54 +222,70 @@ public:
         return children.size() < availMoves.size();
     };
 
-    // Using UCT equation, compute value of child nodes and assign to childValue vector
-    void computeChildValue()
+    // During node selection, use UCT equation to compute value of child nodes and assign to childSelectionValue vector
+    void computeChildUctValue()
     {
-        childValue.clear();
-        childValue.reserve(children.size());
+        this->childUctValue.clear();
+        this->childUctValue.reserve(this->children.size());
 
-        for (auto& child : children)
+        for (auto& child : this->children)
         {
-            childValue.push_back((float)(child->score/child->nTimesVisited + sqrt(2)*sqrt(log(nTimesVisited)/child->nTimesVisited)));
+            
+            this->childUctValue.push_back((float)(child->score/child->nTimesVisited + sqrt(2)*sqrt(log(this->nTimesVisited)/child->nTimesVisited)));
         }
     }
 
-    // Select the best-valued child from known children. Randomly select from tied children.
-    GameState* selectNextNode()
+    // During move selection, compute the expected value of the move (score over times visited)/AKA exploitation and assign to moveValue vector
+    void computeMoveValue()
+    {
+        this->moveValue.clear();
+        this->moveValue.reserve(this->children.size());
+
+        for (auto& child : this->children)
+        {
+            this->moveValue.push_back((float)child->score/child->nTimesVisited);
+        }
+    }
+
+    // During search, select the best-valued child from known children using UCT. Randomly select from tied children.
+    std::shared_ptr<GameState> selectNextNode()
     {
 
-        computeChildValue();
+        computeChildUctValue();
 
-        auto maxIndices = findMaxima(childValue);
+        auto maxIndices = findMaxima(childUctValue);
         
         if (maxIndices.empty()) {
             std::cout<< "Could not find a maximum!"<< std::endl;
             //TODO throw error
 
         } else if (maxIndices.size()==1){
-            std::cout<< "Found a single maximum at child index " << maxIndices[0] << std::endl;
+            //std::cout<< "Found a single maximum at child index " << maxIndices[0] << std::endl;
             return children[maxIndices[0]];
 
         } else {
-            std::cout << "Found multiple maxima at child indices " << std::endl;
-            for (int ii=0 ; ii< maxIndices.size(); ii++) {
-                std::cout << maxIndices[ii] << std::endl;
-            }
-            std::cout << "Choosing random child" << std::endl;
-            return children[(int)(rand()%maxIndices.size())];
+            //std::cout << "Found multiple maxima at child indices " << std::endl;
+            // for (int ii=0 ; ii< maxIndices.size(); ii++) {
+            //     std::cout << maxIndices[ii] << std::endl;
+            // }
+            std::uniform_int_distribution<int> distribution(0,maxIndices.size()-1);
+            int randInt = distribution(generator); 
+
+            // int randInt = rand()%(maxIndices.size());
+
+            //std::cout << "Multiple maxima when selecting next node, choosing random child " << randInt+1 << "/" << maxIndices.size() <<std::endl;
+            return children[randInt];
         }
     };
 
-    Move* selectBestMove()
+    Move selectBestMove()
     {
 
-        computeChildValue();
+        computeMoveValue();
 
-        auto maxIndices = findMaxima(childValue);
+        auto maxIndices = findMaxima(moveValue);
         
         if (maxIndices.empty()) {
-            std::cout<< "Could not find a maximum!"<< std::endl;
-            //TODO throw error
 
         } else if (maxIndices.size()==1){
             std::cout<< "Found a single maximum at child index " << maxIndices[0] << std::endl;
@@ -273,8 +296,10 @@ public:
             for (int ii=0 ; ii< maxIndices.size(); ii++) {
                 std::cout << maxIndices[ii] << std::endl;
             }
-            std::cout << "Choosing random child" << std::endl;
-            return completedMoves[(int)(rand()%maxIndices.size())];
+            std::cout << "Found multiple maxima, choosing random best move" << std::endl;
+            std::uniform_int_distribution<int> distribution(0,maxIndices.size()-1);
+            int randInt = distribution(generator); 
+            return completedMoves[randInt];
         }
     };
 
@@ -306,12 +331,12 @@ public:
             this->robotYPix-=this->pixelStepsize;
         }
         if (move==5) {
-            std::cout << "PickUp" << std::endl;
+            //std::cout << "PickUp" << std::endl;
             this->robotHasCargo=true;
             this->cargoAtPickup=false;
         }
         if (move==6) {
-            std::cout << "DropOff" << std::endl;
+            //std::cout << "DropOff" << std::endl;
             this->robotHasCargo=false;
             this->cargoAtDest=true;
         }
@@ -322,12 +347,10 @@ public:
     {
         // If the cargo is delivered, return a 1 for a win
         if (cargoAtDest) {
-            //std::cout << "LOSS: Exceeded max number of moves" << std::endl;
             return 1;
         };
         // If the robot makes too many moves, return a 0 for a loss
         if (nMoves > maxNumMoves) {
-            //std::cout << "LOSS: Exceeded max number of moves" << std::endl;
             return 0;
         };
         
@@ -342,15 +365,17 @@ public:
     Tree(){}
 
     // Initialize tree with game state at root
-    Tree(GameState* gs) : rootNode(gs) {
-        nodes.push_back(gs);
+    Tree(std::shared_ptr<GameState> gs) : rootNode(gs) {
+        //nodes.push_back(gs);
     }
 
     // Member variables
-    GameState* rootNode;
-    GameState* currentNode;
-    std::vector<GameState*> nodes;
-    float searchTime{0.9}; // TODO make this a parameter
+    std::shared_ptr<GameState> rootNode;
+    std::shared_ptr<GameState> currentNode;
+    //std::vector<std::shared_ptr<GameState>> nodes;
+    float searchTime{2.5}; // TODO make this a parameter
+
+    Move bestMove;
 
 
     void Search()
@@ -361,81 +386,89 @@ public:
 
         // Main, timed search loop
         do {
-
-            // From the current node, select the best option (or randomly from equal options) until a leaf is reached
+            // SELECT: From the current node, select the best option (or randomly from equal options) until a leaf is reached
             while(!currentNode->isLeaf()) {
-                // Select 
-                GameState* nextNode = currentNode->selectNextNode();
+                std::shared_ptr<GameState> nextNode = currentNode->selectNextNode();
                 currentNode = nextNode;
             }
-            //std::cout << "Found leaf at: " << currentNode->robotXPix << ", " << currentNode->robotYPix << std::endl;
 
-            // If the current node (leaf) is not terminal, create and choose a child node
-            if (currentNode->gameResult() ==-1) // TODO maybe remove this?
+            // EXPAND: Expand the node by creating a child from a random, available move
+            // Randomly select a move that hasn't already been done
+            std::uniform_int_distribution<int> distribution(0,currentNode->availMoves.size()-1);
+            int randInt = distribution(currentNode->generator); 
+            Move nextMove = currentNode->availMoves[randInt];
+            // Keep trying if move was already done
+            while (std::count(currentNode->completedMoves.begin(), currentNode->completedMoves.end(), nextMove)) 
             {
-                std::cout << "Current Node not terminal. Creating new child." << std::endl;
-
-                // Create a child node by randomly selecting a move that hasn't already been done
-                Move nextMove = currentNode->availMoves[(int)(rand()%currentNode->availMoves.size())];
-                std::cout << "Want to select move " << nextMove << std::endl; //<< " out of " << currentNode->availMoves.size() << std::endl;
-                std::cout << "Already did moves:" << std::endl;
-                for (auto& move : currentNode->completedMoves){
-                    std::cout << move << std::endl;
-                }
-
-                while (std::count(currentNode->completedMoves.begin(), currentNode->completedMoves.end(), nextMove)) // keep trying if move was already done
-                {
-                    std::cout << "Move was already done, trying again" << std::endl;
-                    nextMove = currentNode->availMoves[(int)(rand()%currentNode->availMoves.size())];
-                }
-
-                // Create new node, add pointer to nodes vector
-                std::shared_ptr<GameState> childNode = std::make_shared<GameState>(currentNode, nextMove);
-                currentNode->children.push_back(childNode.get());
-                currentNode->completedMoves.push_back(nextMove);
-                nodes.push_back(childNode.get());
-                //currentNode = childNode.get();
-
-                std::cout << "Current Node has children: " << currentNode->children.size() << std::endl;
-                for (auto& child : currentNode->children){
-                    std::cout << child->robotXPix << ", "<< child->robotYPix << std::endl;
-                }
-                std::cout << "Current Node has done moves: " << currentNode->completedMoves.size() << std::endl;
-                for (auto& move : currentNode->completedMoves){
-                    std::cout << move << std::endl;
-                }
-                // Simulate from child node
-                GameState simNode = (*childNode);
-                while (simNode.gameResult()==-1) {
-                    // Compute available moves at this node
-                    simNode.getAvailMoves();
-
-                    // Randomly select a move, and advance the simulated state
-                    simNode.propagate(simNode.availMoves[(int)(rand()%simNode.availMoves.size())]);
-
-                }
-                std::cout << "Finished child simulation with result: " << simNode.gameResult() << std::endl;
-
-                // Backpropagate
-                currentNode = childNode.get(); // Set current node to the child node
-                currentNode->nTimesVisited=+1; // increment counter
-                currentNode->score += simNode.gameResult(); // increment score
-                std::cout << "BACKPROP: node at " << currentNode->robotXPix << ", " << currentNode->robotYPix << " has been visited " << currentNode->nTimesVisited << " times with score " << currentNode->score << std::endl;
-
-                while (currentNode->parent != nullptr){ // While the current node isn't the root
-                    currentNode = currentNode->parent; // Move back toward the root
-                    currentNode->nTimesVisited=+1; // increment counter
-                    currentNode->score += simNode.gameResult(); // increment score
-                    std::cout << "BACKPROP: node at " << currentNode->robotXPix << ", " << currentNode->robotYPix << " has been visited " << currentNode->nTimesVisited << " times with score " << currentNode->score << std::endl;
-                }
+                randInt = distribution(currentNode->generator); 
+                nextMove = currentNode->availMoves[randInt];
             }
+
+            // // Create new node, add pointer to nodes vector, based on next move
+            // std::shared_ptr<GameState> childNode;
+            // childNode.reset();
+            // childNode = std::make_shared<GameState>(currentNode, nextMove);
+            std::shared_ptr<GameState> childNode = std::make_shared<GameState>(currentNode, nextMove);
+            currentNode->children.push_back(childNode);
+            currentNode->completedMoves.push_back(nextMove);
+            //nodes.push_back(childNode);
+
+
+            // std::cout << "Current Node has " << currentNode->children.size() << " children" << std::endl;
+            // for (auto& child : currentNode->children){
+            //     std::cout << child->robotXPix << ", "<< child->robotYPix << std::endl;
+            //     std::cout << child << std::endl;
+            // }
+            // std::cout << "Current Node has done moves: " << std::endl;
+            // for (auto& move : currentNode->completedMoves){
+            //     std::cout << move << std::endl;
+            // }
+
+            // Simulate from child node until a terminal state is reached
+            GameState simNode = *(childNode.get()); // Dereference the child node to simulate without altering the actual child node's state
+            while (simNode.gameResult()==-1) {
+                // Compute available moves at this node
+                simNode.getAvailMoves();
+
+                // Randomly select a move, and advance the simulated state
+                std::uniform_int_distribution<int> distribution(0,simNode.availMoves.size()-1);
+                int randSimInt = distribution(simNode.generator); 
+                simNode.propagate(simNode.availMoves[randSimInt]);
+            }
+
+
+            // Backpropagate
+            currentNode = childNode; // Move to the child node
+            currentNode->nTimesVisited+=1; // increment counter
+            currentNode->score += simNode.gameResult(); // increment score
+            //std::cout << "BACKPROP: node at " << currentNode->robotXPix << ", " << currentNode->robotYPix << " has been visited " << currentNode->nTimesVisited << " times with score " << currentNode->score << std::endl;
+
+            while (currentNode->parent != nullptr){ // While the current node isn't the root
+                // std::cout << "Current node: " << currentNode << std::endl;
+                // std::cout << "Parent node: " << currentNode->parent << std::endl;
+                // std::cout << "Root node: " << rootNode << std::endl;
+                // std::cout << "Root Parent node: " << rootNode->parent << std::endl;
+                currentNode = currentNode->parent; // Move back toward the root
+                currentNode->nTimesVisited+=1; // increment counter
+                currentNode->score += simNode.gameResult(); // increment score
+                //std::cout << "BACKPROP: node at " << currentNode->robotXPix << ", " << currentNode->robotYPix << " has been visited " << currentNode->nTimesVisited << " times with score " << currentNode->score << std::endl;
+            }
+            //std::cout << "Made it back to root" << std::endl;
+
+            //}
+
         }// End main search loop
         while (time(0) - searchStartTime < searchTime);
 
         std::cout << "SEARCH COMPLETE" << std::endl;
         std::cout << "Time: " << time(0) - searchStartTime <<  std::endl;
         std::cout << "Root node at " << rootNode->robotXPix << ", " << rootNode->robotYPix << " has been visited " << rootNode->nTimesVisited << " times with score " << rootNode->score << std::endl;        
-        std::cout << "Best Move: " << rootNode->selectBestMove << std::endl;
+        for (auto child : rootNode->children)
+        {
+            std::cout <<"Child " << child.get() << " has been visited " << child->nTimesVisited << " times, with score " << child->score << std::endl;
+        }
+        bestMove = rootNode->selectBestMove();
+        std::cout << "Best Move: " << bestMove << std::endl;
 
     } // Search method
 

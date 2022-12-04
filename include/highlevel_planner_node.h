@@ -33,7 +33,7 @@ double robotV;
 double robotYawRate;
 double robotHeading,robotRoll, robotPitch;
 
-float dt = 1.0;
+float dt = 3.0;
 
 // Mapping/visualization
 cv::Mat mapImg;
@@ -47,8 +47,8 @@ uint robotXpixel;
 uint robotYpixel;
 
 // MCTS/game variables
-GameState currentState;
-Tree gameTree;
+std::shared_ptr<GameState> currentState;
+//Tree gameTree;
 bool robotHasCargo{false};
 bool cargoAtPickup{true};
 bool cargoAtDest{false};
