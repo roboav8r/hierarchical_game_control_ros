@@ -20,15 +20,14 @@ int main(int argc, char **argv)
   // Get current robot position
   ros::Subscriber position_sub = nh.subscribe<nav_msgs::Odometry>("/base_pose_ground_truth", 1, robotOdomCallback);
 
+  // Get navigation goal
+  ros::Subscriber navgoal_sub = nh.subscribe<move_base_msgs::MoveBaseGoal>("/nav_goal",1,navGoalCallback);
+  goal.target_pose.pose.position.x = 0; // set initial nav goal as the robot's initial value - TODO replace with callback values or wait for position measurement
+  goal.target_pose.pose.position.y = 10.0;
+
   // Get LiDAR scan data
   ros::Subscriber lidar_sub = nh.subscribe<sensor_msgs::LaserScan>("/base_scan", 1, scanCallback);
 
-  // Get Goal
-  // TODO make subscriber & callback
-  move_base_msgs::MoveBaseGoal goal;
-  // TODO boolean goal_reached and tolerance
-  goal.target_pose.pose.position.x = 5;
-  goal.target_pose.pose.position.y = 5;
 
   /*
   DEFINE VARIABLES
@@ -63,7 +62,6 @@ int main(int argc, char **argv)
   llControlProgram.AddVariableSet(tgt_state_var_ptr);
   llControlProgram.AddConstraintSet(dyn_const_ptr);
   llControlProgram.AddConstraintSet(state_const_ptr);
-  // llControlProgram.AddConstraintSet(state_bounds_ptr);
   llControlProgram.AddCostSet(input_cost_ptr);
   llControlProgram.AddCostSet(goal_cost_ptr);
   llControlProgram.AddCostSet(obst_cost_ptr);
@@ -87,16 +85,7 @@ int main(int argc, char **argv)
     float currentY = robotY;
     float currentH = robotHeading;
     float currentV = robotV;
-    float x_error = goal.target_pose.pose.position.x - currentX;
-    float y_error = goal.target_pose.pose.position.y - currentY;
 
-    // std::cout << "x goal: " << goal.target_pose.pose.position.x << std::endl;
-    // std::cout << "y goal: " << goal.target_pose.pose.position.y << std::endl;  
-    // std::cout << "currentX: " << currentX << std::endl;
-    // std::cout << "currentY: " << currentY << std::endl;
-    // std::cout << "currentH: " << currentH << std::endl;
-    // std::cout << "currentV: " << currentV << std::endl;
-    //std::cout << "yaw rate" << robotYawRate << std::endl;
     curr_state_var_ptr->SetVariables(Vector4d(currentX, currentY,currentH,currentV));
     tgt_state_var_ptr->SetVariables(Vector4d(currentX, currentY,currentH,currentV));
     state_const_ptr->SetTargetState(currentX, currentY,currentH,currentV);
@@ -124,22 +113,11 @@ int main(int argc, char **argv)
     std::cout << "Solver tgt v: " << uOptimal(9) << std::endl;
 
 
-    // TEST: ensure current x values match solver robot state
-    double eps = .01; 
-    // assert(currentX-eps < uOptimal(2) && uOptimal(2) < currentX+eps);
-    // assert(currentY-eps < uOptimal(3) && uOptimal(3) < currentY+eps);    
-    // assert(currentH-eps < uOptimal(4) && uOptimal(4) < currentH+eps);
-    // assert(currentV-eps < uOptimal(5) && uOptimal(5) < currentV+eps);
-
     // Update and publish control message
     controlMsg.angular.z = uOptimal(0); // yaw rate
     controlMsg.linear.x = currentV + uOptimal(1)*dt; // acceleration
-    // controlMsg.angular.z = 1; // yaw rate
-    // controlMsg.linear.x = 0; // acceleration
     control_pub.publish(controlMsg);
 
-
-    std::cout << "End Main Timer: " << event.current_real << std::endl;
   });
 
   // ros::spin();

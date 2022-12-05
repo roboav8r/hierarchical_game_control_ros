@@ -1,0 +1,13 @@
+<launch>
+  <group ns="planner">
+
+    <!-- Load parameters -->
+    <arg name="mapfile" default="clean_hospital_map"/>
+    <rosparam command="load" file="$(find hri_game_testbed)/maps/$(arg mapfile).yaml" />
+    <param name="map_path" type="string" value="$(find hri_game_testbed)/maps/$(arg mapfile).pgm" />
+
+    <!-- Launch node -->
+    <node name="hl_planner_node" pkg="hierarchical_game_control_ros" type="highlevel_planner_node" output="screen" />
+
+  </group>
+</launch>

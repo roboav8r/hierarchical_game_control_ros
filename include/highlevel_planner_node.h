@@ -87,6 +87,15 @@ void updateCargoPixels()
     dropoffYpixel = (destY - mapOriginY)/mapResolution;
 }
 
+void sendGoalMessage(ros::Publisher& goal_pub, float deltaX, float deltaY)
+{
+    move_base_msgs::MoveBaseGoal goalMsg;
+    goalMsg.target_pose.header.frame_id = "map";
+    goalMsg.target_pose.pose.position.x = robotX + deltaX;
+    goalMsg.target_pose.pose.position.y = robotY + deltaY;
+    goal_pub.publish(goalMsg);
+}
+
 /*
 ROS Callbacks
 */
@@ -100,7 +109,6 @@ void robotOdomCallback(const nav_msgs::OdometryConstPtr& msg)
 
     tf::quaternionMsgToTF(msg->pose.pose.orientation, robotOrientation);
     tf::Matrix3x3(robotOrientation).getRPY(robotRoll, robotPitch, robotHeading);
-
 }
 
 

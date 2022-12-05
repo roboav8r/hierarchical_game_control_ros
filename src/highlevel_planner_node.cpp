@@ -17,13 +17,12 @@ int main(int argc, char** argv)
   Subscriptions/inputs
   */
   ros::Subscriber position_sub = nh.subscribe<nav_msgs::Odometry>("/base_pose_ground_truth", 1, robotOdomCallback); // Current robot position
-  // Map file
-  // cargo location
 
   /*
   Publishers
   */
   image_transport::Publisher image_pub_ = it_.advertise("planner_image", 1);
+  ros::Publisher goal_pub = nh.advertise<move_base_msgs::MoveBaseGoal>("/nav_goal",10);
 
   /*
   Parameters
@@ -34,16 +33,9 @@ int main(int argc, char** argv)
   nh.getParam("negate", mapNegate);
   pixStepsize = movementStepSize/mapResolution;
   std::cout << "Pixel Step size: " << pixStepsize << std::endl;
-  // grid resolution 
 
-  // std::cout << "Got argc : "<< argc << std::endl;
-  // std::cout << "Got argv : "<< (*argv) << std::endl;
-
-  // loadMapParams(*argv);
-
-  // Get map, save as image
+  // OpenCV: Get map, save as image. Create window.
   mapImg = cv::imread(mapPath, cv::IMREAD_UNCHANGED);
-  // mapImg.convertTo(mapImg, CV_8U, 255.0 / 4096.0);
   cv::namedWindow("Planner");
 
   /*
@@ -99,8 +91,22 @@ int main(int argc, char** argv)
     }
 
     // Handle the selected action
-
-    // Plot best/selected move
+    if( gameTree.bestMove == Move::PlusX) {
+        cv::line(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), cv::Point(robotXpixel+pixStepsize, plannerImg.rows - robotYpixel), cv::Scalar(0,0,0), 3, cv::LINE_8);
+        sendGoalMessage(goal_pub, movementStepSize,0);
+    }
+    if ( gameTree.bestMove == Move::PlusY) {
+        cv::line(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), cv::Point(robotXpixel, plannerImg.rows - (robotYpixel +pixStepsize)), cv::Scalar(0,0,0), 3, cv::LINE_8);
+        sendGoalMessage(goal_pub, 0,movementStepSize);
+    }
+    if( gameTree.bestMove == Move::MinusX) {
+        cv::line(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), cv::Point(robotXpixel-pixStepsize, plannerImg.rows - robotYpixel), cv::Scalar(0,0,0), 3, cv::LINE_8);
+        sendGoalMessage(goal_pub, -movementStepSize,0);
+    }
+    if ( gameTree.bestMove == Move::MinusY) {
+        cv::line(plannerImg, cv::Point(robotXpixel, plannerImg.rows - robotYpixel), cv::Point(robotXpixel, plannerImg.rows - (robotYpixel -pixStepsize)), cv::Scalar(0,0,0), 1, cv::LINE_8);
+        sendGoalMessage(goal_pub, 0,-movementStepSize);
+    }
 
 
     // Resize and display
@@ -109,7 +115,7 @@ int main(int argc, char** argv)
     int widthScaled{(int)(plannerImg.cols*scaleFactor)};
     cv::resize(plannerImg, scaledImg, cv::Size(widthScaled, heightScaled), cv::INTER_LINEAR);
     cv::imshow("Planner", scaledImg);
-    cv::waitKey(3);
+    cv::waitKey(1);
 
     // std::cout << "End Main Timer: " << event.current_real << std::endl;
   });

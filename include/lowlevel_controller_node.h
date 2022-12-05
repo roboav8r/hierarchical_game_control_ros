@@ -18,6 +18,7 @@
 nav_msgs::Odometry robotOdom;
 tf::Quaternion robotOrientation;
 geometry_msgs::Twist controlMsg;
+move_base_msgs::MoveBaseGoal goal;
 
 // State variables
 double robotX;
@@ -77,6 +78,12 @@ void scanCallback(const sensor_msgs::LaserScanConstPtr& msg)
         //std::cout << scanAngles[ii] << "," << scanRanges[ii] <<": " << scanXRobot[ii] << "," << scanYRobot[ii] <<std::endl;
     };
     // robotOdom = (*msg);
+}
+
+void navGoalCallback(const move_base_msgs::MoveBaseGoalConstPtr& msg)
+{
+  goal.target_pose.pose.position.x = msg->target_pose.pose.position.x; 
+  goal.target_pose.pose.position.y = msg->target_pose.pose.position.y;
 }
 
 // Solver variables
