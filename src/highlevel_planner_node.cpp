@@ -110,11 +110,12 @@ int main(int argc, char** argv)
 
 
     // Resize and display
-    float scaleFactor{0.5};
+    float scaleFactor{1};
     int heightScaled{(int)(plannerImg.rows*scaleFactor)};
     int widthScaled{(int)(plannerImg.cols*scaleFactor)};
     cv::resize(plannerImg, scaledImg, cv::Size(widthScaled, heightScaled), cv::INTER_LINEAR);
-    cv::imshow("Planner", scaledImg);
+    cv::Rect region(1625,1700,750,750);
+    cv::imshow("Planner", scaledImg(region));
     cv::waitKey(1);
 
     // std::cout << "End Main Timer: " << event.current_real << std::endl;

@@ -5,7 +5,7 @@
   <include file="$(find hri_game_testbed)/launch/hospital_game.launch" pass_all_args="true" />
 
   <!-- Launch the high-level planner -->
-  <node name="highlevel_controller_node" pkg="hierarchical_game_control_ros" type="highlevel_controller_node" output="screen"/>
+  <include file="$(find hierarchical_game_control_ros)/launch/highlevel_planner.launch" pass_all_args="true" />
 
   <!-- Launch the low-level controller -->
   <node name="lowlevel_controller_node" pkg="hierarchical_game_control_ros" type="lowlevel_controller_node" output="screen"/>
